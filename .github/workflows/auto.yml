@@ -28,14 +28,12 @@ jobs:
             LINE="Commit #$i - $DATE"
             CONTENT=$(printf "%s" "$LINE" | base64)
 
-            # Update file via API (setiap PUT = 1 commit)
             curl -s -X PUT \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Content-Type: application/json" \
-              -d "{\"message\": \"Daily update $i\", \"content\": \"$CONTENT\", \"sha\": \"$SHA\"}" \
+              -d "{\"message\": \"Daily update $i\", \"content\": \"$CONTENT\", \"sha\": \"$SHA\", \"branch\": \"main\"}" \
               https://api.github.com/repos/JoshNells13/daily-commit/contents/$FILE > output.json
 
-            # Ambil SHA terbaru biar commit berikutnya tetap nyambung
             SHA=$(cat output.json | jq -r '.content.sha')
 
             echo "Commit $i sukses!"
