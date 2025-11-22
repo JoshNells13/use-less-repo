@@ -12,21 +12,32 @@ jobs:
   commit:
     runs-on: ubuntu-latest
     steps:
-      - name: Update update.txt via API
+      - name: Generate 10 commits via GitHub API
         run: |
-          DATE=$(date)
-
-          CONTENT=$(printf "%s" "$DATE" | base64)
-
           FILE="commit.txt"
 
+          # Ambil SHA file (kalau ada)
           SHA=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/JoshNells13/daily-commit/contents/$FILE \
             | jq -r '.sha')
 
-          curl -X PUT \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"message\": \"Daily update\", \"content\": \"$CONTENT\", \"sha\": \"$SHA\"}" \
-            https://api.github.com/repos/JoshNells13/daily-commit/contents/$FILE
+          for i in {1..10}
+          do
+            DATE="$(date)"
+            LINE="Commit #$i - $DATE"
+            CONTENT=$(printf "%s" "$LINE" | base64)
+
+            # Update file via API (setiap PUT = 1 commit)
+            curl -s -X PUT \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"message\": \"Daily update $i\", \"content\": \"$CONTENT\", \"sha\": \"$SHA\"}" \
+              https://api.github.com/repos/JoshNells13/daily-commit/contents/$FILE > output.json
+
+            # Ambil SHA terbaru biar commit berikutnya tetap nyambung
+            SHA=$(cat output.json | jq -r '.content.sha')
+
+            echo "Commit $i sukses!"
+            sleep 1
+          done
